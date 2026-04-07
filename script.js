@@ -1,5 +1,5 @@
 const searchBox = document.querySelector('.searchBox');
-const searchBtn = document.querySelector('.searchBtn');
+const searchForm = document.querySelector('.search-panel');
 const recipeContainer = document.querySelector('.recipe-container');
 const recipeDetailsContent = document.querySelector('.recipe-details-content');
 const recipeCloseBtn = document.querySelector('.recipe-close-btn');
@@ -26,105 +26,96 @@ const getCategoryStyle = (category) => {
     return `background:${palette.background};color:${palette.color};`;
 };
 
-// Function to get recipes
-const fetchRecipes = async (query) => {
-    recipeContainer.innerHTML = "<h2>Fetching Recipes...</h2>";
-    try {
-    const data = await fetch(`https://www.themealdb.com/api/json/v1/1/search.php?s=${query}`);
-    const response = await data.json();
+const renderMessage = (message) => {
+    recipeContainer.innerHTML = `<h2 class="empty-state">${message}</h2>`;
+};
 
-    recipeContainer.innerHTML = "";
-    response.meals.forEach(meal => {
-        const recipeDiv = document.createElement('div');
-        recipeDiv.classList.add('recipe');
-        recipeDiv.innerHTML =`
-             <img src="${meal.strMealThumb}">
-             <h3> ${meal.strMeal} </h3>
+const fetchRecipes = async (query) => {
+    renderMessage("Fetching recipes...");
+
+    try {
+        const data = await fetch(`https://www.themealdb.com/api/json/v1/1/search.php?s=${query}`);
+        const response = await data.json();
+
+        if (!response.meals) {
+            renderMessage(`No recipes found for "${query}".`);
+            return;
+        }
+
+        recipeContainer.innerHTML = "";
+        response.meals.forEach((meal) => {
+            const recipeDiv = document.createElement('div');
+            recipeDiv.classList.add('recipe');
+            recipeDiv.innerHTML = `
+             <img src="${meal.strMealThumb}" alt="${meal.strMeal}">
+             <h3>${meal.strMeal}</h3>
              <div class="recipe-tags">
                 <span class="recipe-tag area-tag">${meal.strArea}</span>
                 <span class="recipe-tag category-tag" style="${getCategoryStyle(meal.strCategory)}">${meal.strCategory}</span>
              </div>
-        `
+        `;
+
             const button = document.createElement('button');
             button.textContent = "View Recipe";
             recipeDiv.appendChild(button);
 
-        //Adding addEventListener to recipe butoon
-        button.addEventListener('click', () => {
-            openRecipePopup(meal);
-        });
+            button.addEventListener('click', () => {
+                openRecipePopup(meal);
+            });
 
             recipeContainer.appendChild(recipeDiv);
-    });
-
+        });
     }
     catch (error) {
-        recipeContainer.innerHTML = "<h2>Error in Fetching Recipes...</h2>";
+        renderMessage("Unable to fetch recipes right now.");
     }
+};
 
-} 
-
-// Function to fetch ingredients and measurements
 const fetchIngredients = (meal) => {
     let ingredientsList = "";
-    for(let i=1; i<20; i++){
+    for (let i = 1; i <= 20; i += 1) {
         const ingredient = meal[`strIngredient${i}`];
-        if(ingredient){
+        if (ingredient) {
             const measure = meal[`strMeasure${i}`];
-            ingredientsList += `<li>${measure} ${ingredient}</li>`
+            ingredientsList += `<li>${measure} ${ingredient}</li>`;
         }
-        else{
+        else {
             break;
         }
     }
     return ingredientsList;
-}
+};
 
 const openRecipePopup = (meal) => {
-    console.log('meal::::', meal)
     recipeDetailsContent.innerHTML = `
         <h2 class="recipeName">${meal.strMeal}</h2>
-        <h3>Ingredents:</h3>
+        <div class="recipe-tags">
+            <span class="recipe-tag area-tag">${meal.strArea}</span>
+            <span class="recipe-tag category-tag" style="${getCategoryStyle(meal.strCategory)}">${meal.strCategory}</span>
+        </div>
+        <h3>Ingredients:</h3>
         <ul class="ingredientList">${fetchIngredients(meal)}</ul>
         <div class="recipeInstructions">
             <h3>Instructions:</h3>
             <p>${meal.strInstructions}</p>
         </div>
-    `
-    
+    `;
+
     recipeDetailsContent.parentElement.style.display = "block";
-}
+};
 
 recipeCloseBtn.addEventListener('click', () => {
     recipeDetailsContent.parentElement.style.display = "none";
 });
-searchBtn.addEventListener('click', (e)=>{
+
+searchForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const searchInput = searchBox.value.trim();
-    if(!searchInput){
-        recipeContainer.innerHTML = `<h2> Type the meal in the search box.</h2>`;
+
+    if (!searchInput) {
+        renderMessage("Type a meal name in the search box.");
         return;
     }
+
     fetchRecipes(searchInput);
-    // console.log("Buttom Clicked")
 });
-
-// let fisrtName = 'aung';
-// let lastName = "ps";
-
-// // string concatination
-// console.log('first name is '+fisrtName +' and the last name is ' + lastName)
-
-// // string interpolation
-
-// console.log(`first name is ${fisrtName} and the last name is ${lastName}`)
-
-// function sum() {
-//     retrun
-// }
-
-// let name = 'aps' 
-
-// let div = () => {
-
-// }
